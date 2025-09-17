@@ -2,136 +2,135 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Painel de Geração de Link - Carrinho</title>
+  <title>Gerar Link Rápido</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-    h2 { color: #333; }
-    .box { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 10px; }
-    input, button { padding: 6px; margin-top: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #0073e6; color: white; }
-    .btn { background: #0073e6; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .container { background: #fff; width: 900px; margin: 20px auto; border: 1px solid #ccc; border-radius: 5px; }
+    .header { background: #3399ff; color: white; padding: 8px; font-weight: bold; }
+    .section { padding: 10px; border-top: 1px solid #ccc; }
+    .section h3 { background: #0073e6; color: white; margin: -10px -10px 10px -10px; padding: 8px; font-size: 14px; }
+    label { font-weight: bold; margin-right: 5px; }
+    input[type=text], input[type=number] { padding: 5px; width: 250px; }
+    .row { margin-bottom: 10px; display: flex; align-items: center; }
+    .row span { width: 120px; color: red; }
+    .btn { background: #0073e6; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; }
     .btn:hover { background: #005bb5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+    th { background: #0073e6; color: white; }
+    .autocomplete { position: relative; display: inline-block; }
+    .suggestions { position: absolute; border: 1px solid #ccc; background: white; max-height: 150px; overflow-y: auto; width: 250px; z-index: 10; }
+    .suggestions div { padding: 6px; cursor: pointer; }
+    .suggestions div:hover { background: #f0f0f0; }
   </style>
 </head>
 <body>
+<div class="container">
+  <div class="header">Gerar link rápido</div>
 
-  <h2>Gerador de Link Dinâmico - Carrinho</h2>
-
-  <!-- Adicionar produtos -->
-  <div class="box">
-    <label>SKU ERP:</label>
-    <input type="text" id="skuErp" placeholder="Ex: 10378">
-    
-    <label>Quantidade:</label>
-    <input type="number" id="quantidade" value="1" min="1">
-    
-    <button class="btn" onclick="adicionarProduto()">Adicionar Produto</button>
+  <div class="section">
+    <div class="row">
+      <label>Loja:</label>
+      <input type="text" placeholder="Digite para pesquisar...">
+    </div>
   </div>
 
-  <!-- Lista de produtos -->
-  <div class="box">
-    <h3>Produtos adicionados</h3>
-    <table id="tabelaProdutos">
-      <thead>
-        <tr>
-          <th>SKU ERP</th>
-          <th>SKU Site</th>
-          <th>Descrição</th>
-          <th>Quantidade</th>
-          <th>Ação</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="section">
+    <h3>Produtos</h3>
+    <div id="produtos"></div>
+    <button class="btn" onclick="adicionarLinha()">+ Adicionar Produto</button>
   </div>
 
-  <!-- Cupom e link -->
-  <div class="box">
-    <label>Cupom de desconto:</label>
-    <input type="text" id="cupom" placeholder="Ex: cliente10">
-    
-    <button class="btn" onclick="gerarLink()">Gerar Link</button>
-    <br><br>
-    <input type="text" id="linkFinal" readonly style="width:100%">
-    <button class="btn" onclick="copiarLink()">Copiar Link</button>
+  <div class="section">
+    <div class="row">
+      <label>Cupom de Desconto:</label>
+      <input type="text" id="cupom" placeholder="Ex: cliente10">
+    </div>
+    <div class="row">
+      <label>Link Dinâmico:</label>
+      <input type="text" id="linkFinal" readonly style="flex:1">
+      <button class="btn" onclick="copiarLink()">Copiar Link</button>
+    </div>
+    <button class="btn" onclick="gerarLink()">Gerar</button>
   </div>
+</div>
 
 <script>
-  let produtosCSV = []; // Banco de dados (virá do JSON)
-  let carrinho = [];    // Produtos adicionados
+  let produtosCSV = [];
+  let carrinho = [];
 
-  // Carrega o JSON fixo e normaliza as chaves
+  // carrega JSON
   fetch("produtos.json")
     .then(res => res.json())
     .then(data => {
       produtosCSV = data.map(p => {
         const newObj = {};
         for (let key in p) {
-          // Remove BOM (\ufeff) e espaços extras das chaves
           newObj[key.replace('\ufeff','').trim()] = p[key];
         }
         return newObj;
       });
-      console.log("Produtos carregados:", produtosCSV);
-    })
-    .catch(err => alert("Erro ao carregar produtos: " + err));
+    });
 
-  // Adicionar produto pelo SKU ERP
-  function adicionarProduto() {
-    const skuErp = document.getElementById('skuErp').value.trim();
-    const qtd = parseInt(document.getElementById('quantidade').value);
-
-    if (!skuErp || isNaN(qtd) || qtd <= 0) {
-      alert("Preencha corretamente o SKU ERP e a quantidade.");
-      return;
-    }
-
-    const produto = produtosCSV.find(p => p.skuErp === skuErp);
-
-    if (!produto) {
-      alert("SKU ERP não encontrado na base de produtos!");
-      return;
-    }
-
-    // Verifica se o produto já está no carrinho
-    const existente = carrinho.find(p => p.skuErp === skuErp);
-    if (existente) {
-      existente.quantidade += qtd;
-    } else {
-      carrinho.push({ ...produto, quantidade: qtd });
-    }
-
-    atualizarTabela();
+  // cria nova linha de produto
+  function adicionarLinha() {
+    const div = document.createElement("div");
+    div.className = "row";
+    div.innerHTML = `
+      <span>Produto Derivação:</span>
+      <div class="autocomplete">
+        <input type="text" oninput="mostrarSugestoes(this)" placeholder="Digite SKU ou descrição">
+        <div class="suggestions"></div>
+      </div>
+      <span style="margin-left:20px">Quantidade:</span>
+      <input type="number" value="1" min="1" style="width:60px">
+      <button class="btn" onclick="removerLinha(this)">-</button>
+    `;
+    document.getElementById("produtos").appendChild(div);
   }
 
-  // Atualizar tabela
-  function atualizarTabela() {
-    const tbody = document.querySelector("#tabelaProdutos tbody");
-    tbody.innerHTML = "";
-    carrinho.forEach((p, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${p.skuErp}</td>
-        <td>${p.skuSite}</td>
-        <td>${p.descricao}</td>
-        <td>${p.quantidade}</td>
-        <td><button class="btn" onclick="removerProduto(${i})">Remover</button></td>
-      `;
-      tbody.appendChild(tr);
+  // remover linha
+  function removerLinha(btn) {
+    btn.parentElement.remove();
+  }
+
+  // autocomplete
+  function mostrarSugestoes(input) {
+    const value = input.value.toLowerCase();
+    const sugDiv = input.parentElement.querySelector(".suggestions");
+    sugDiv.innerHTML = "";
+    if (!value) return;
+
+    const resultados = produtosCSV.filter(p =>
+      p.skuErp.toLowerCase().includes(value) ||
+      p.descricao.toLowerCase().includes(value)
+    ).slice(0, 10);
+
+    resultados.forEach(p => {
+      const option = document.createElement("div");
+      option.textContent = `${p.skuErp} - ${p.descricao}`;
+      option.onclick = () => {
+        input.value = p.skuErp;
+        input.dataset.skuSite = p.skuSite;
+        input.dataset.descricao = p.descricao;
+        sugDiv.innerHTML = "";
+      };
+      sugDiv.appendChild(option);
     });
   }
 
-  // Remover produto
-  function removerProduto(index) {
-    carrinho.splice(index, 1);
-    atualizarTabela();
-  }
-
-  // Gerar link
+  // gerar link
   function gerarLink() {
+    const linhas = document.querySelectorAll("#produtos .row");
+    carrinho = [];
+    linhas.forEach(l => {
+      const inp = l.querySelector("input[type=text]");
+      const qtd = l.querySelector("input[type=number]").value;
+      if (inp.dataset.skuSite) {
+        carrinho.push({ skuSite: inp.dataset.skuSite, skuErp: inp.value, descricao: inp.dataset.descricao, quantidade: qtd });
+      }
+    });
+
     if (carrinho.length === 0) {
       alert("Adicione pelo menos um produto.");
       return;
@@ -145,15 +144,16 @@
     document.getElementById('linkFinal').value = url;
   }
 
-  // Copiar link
+  // copiar link
   function copiarLink() {
     const link = document.getElementById("linkFinal");
     link.select();
     document.execCommand("copy");
     alert("Link copiado!");
   }
+
+  // cria 3 linhas iniciais
+  for (let i=0; i<3; i++) adicionarLinha();
 </script>
-
-
 </body>
 </html>
