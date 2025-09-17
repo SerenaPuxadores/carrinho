@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Geração de Link - Carrinho</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    h2 { color: #333; }
+    .box { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 10px; }
+    input, button { padding: 6px; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #0073e6; color: white; }
+    .btn { background: #0073e6; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    .btn:hover { background: #005bb5; }
+  </style>
+</head>
+<body>
+
+  <h2>Gerador de Link Dinâmico - Carrinho</h2>
+
+  <!-- Adicionar produtos -->
+  <div class="box">
+    <label>SKU ERP:</label>
+    <input type="text" id="skuErp" placeholder="Ex: 10378">
+    
+    <label>Quantidade:</label>
+    <input type="number" id="quantidade" value="1" min="1">
+    
+    <button class="btn" onclick="adicionarProduto()">Adicionar Produto</button>
+  </div>
+
+  <!-- Lista de produtos -->
+  <div class="box">
+    <h3>Produtos adicionados</h3>
+    <table id="tabelaProdutos">
+      <thead>
+        <tr>
+          <th>SKU ERP</th>
+          <th>SKU Site</th>
+          <th>Descrição</th>
+          <th>Quantidade</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Cupom e link -->
+  <div class="box">
+    <label>Cupom de desconto:</label>
+    <input type="text" id="cupom" placeholder="Ex: cliente10">
+    
+    <button class="btn" onclick="gerarLink()">Gerar Link</button>
+    <br><br>
+    <input type="text" id="linkFinal" readonly style="width:100%">
+    <button class="btn" onclick="copiarLink()">Copiar Link</button>
+  </div>
+
+<script>
+  let produtosCSV = []; // Banco de dados (virá do JSON)
+  let carrinho = [];    // Produtos adicionados
+
+  // Carrega o JSON fixo
+  fetch("produtos.json")
+    .then(res => res.json())
+    .then(data => {
+      produtosCSV = data;
+      console.log("Produtos carregados:", produtosCSV);
+    })
+    .catch(err => alert("Erro ao carregar produtos: " + err));
+
+  // Adicionar produto pelo SKU ERP
+  function adicionarProduto() {
+    const skuErp = document.getElementById('skuErp').value.trim();
+    const qtd = parseInt(document.getElementById('quantidade').value);
+    const produto = produtosCSV.find(p => p.skuErp === skuErp);
+
+    if (!produto) {
+      alert("SKU ERP não encontrado na base de produtos!");
+      return;
+    }
+
+    carrinho.push({ ...produto, quantidade: qtd });
+    atualizarTabela();
+  }
+
+  // Atualizar tabela
+  function atualizarTabela() {
+    const tbody = document.querySelector("#tabelaProdutos tbody");
+    tbody.innerHTML = "";
+    carrinho.forEach((p, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.skuErp}</td>
+        <td>${p.skuSite}</td>
+        <td>${p.descricao}</td>
+        <td>${p.quantidade}</td>
+        <td><button class="btn" onclick="removerProduto(${i})">Remover</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Remover produto
+  function removerProduto(index) {
+    carrinho.splice(index, 1);
+    atualizarTabela();
+  }
+
+  // Gerar link
+  function gerarLink() {
+    if (carrinho.length === 0) {
+      alert("Adicione pelo menos um produto.");
+      return;
+    }
+
+    const skus = carrinho.map(p => `${p.skuSite};${p.quantidade}`).join(",");
+    const cupom = document.getElementById('cupom').value.trim();
+    let url = `https://www.serenapuxadores.com.br/checkout/cart?type=dynamic&skus=${encodeURIComponent(skus)}&action=clear`;
+    if (cupom) url += `&cupom-desconto=${cupom}`;
+
+    document.getElementById('linkFinal').value = url;
+  }
+
+  // Copiar link
+  function copiarLink() {
+    const link = document.getElementById("linkFinal");
+    link.select();
+    document.execCommand("copy");
+    alert("Link copiado!");
+  }
+</script>
+
+</body>
+</html>
