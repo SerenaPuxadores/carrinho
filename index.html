@@ -68,11 +68,15 @@
     div.className = "row";
     div.innerHTML = `
       <span>Produto Derivação:</span>
-      <input type="text" placeholder="SKU ERP" style="width:80px" oninput="buscarPorSku(this)">
-      <div class="autocomplete">
-        <input type="text" placeholder="Digite descrição" oninput="mostrarSugestoes(this)" style="width:250px">
-        <div class="suggestions"></div>
-      </div>
+      <input type="text" placeholder="SKU ERP" style="width:80px" 
+       oninput="buscarPorSku(this)" autocomplete="off">
+
+<div class="autocomplete">
+  <input type="text" placeholder="Digite descrição" 
+         oninput="mostrarSugestoes(this)" style="width:250px" autocomplete="off">
+  <div class="suggestions"></div>
+</div>
+
       <span>Quantidade:</span>
       <input type="number" value="1" min="1" style="width:50px">
       <button class="btn" onclick="removerLinha(this)">-</button>
