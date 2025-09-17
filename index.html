@@ -63,11 +63,18 @@
   let produtosCSV = []; // Banco de dados (virá do JSON)
   let carrinho = [];    // Produtos adicionados
 
-  // Carrega o JSON fixo
+  // Carrega o JSON fixo e normaliza as chaves
   fetch("produtos.json")
     .then(res => res.json())
     .then(data => {
-      produtosCSV = data;
+      produtosCSV = data.map(p => {
+        const newObj = {};
+        for (let key in p) {
+          // Remove BOM (\ufeff) e espaços extras das chaves
+          newObj[key.replace('\ufeff','').trim()] = p[key];
+        }
+        return newObj;
+      });
       console.log("Produtos carregados:", produtosCSV);
     })
     .catch(err => alert("Erro ao carregar produtos: " + err));
@@ -76,6 +83,12 @@
   function adicionarProduto() {
     const skuErp = document.getElementById('skuErp').value.trim();
     const qtd = parseInt(document.getElementById('quantidade').value);
+
+    if (!skuErp || isNaN(qtd) || qtd <= 0) {
+      alert("Preencha corretamente o SKU ERP e a quantidade.");
+      return;
+    }
+
     const produto = produtosCSV.find(p => p.skuErp === skuErp);
 
     if (!produto) {
@@ -83,7 +96,14 @@
       return;
     }
 
-    carrinho.push({ ...produto, quantidade: qtd });
+    // Verifica se o produto já está no carrinho
+    const existente = carrinho.find(p => p.skuErp === skuErp);
+    if (existente) {
+      existente.quantidade += qtd;
+    } else {
+      carrinho.push({ ...produto, quantidade: qtd });
+    }
+
     atualizarTabela();
   }
 
@@ -133,6 +153,7 @@
     alert("Link copiado!");
   }
 </script>
+
 
 </body>
 </html>
