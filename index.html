@@ -4,36 +4,26 @@
   <meta charset="UTF-8">
   <title>Gerar Link Rápido</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
-    .container { background: #fff; width: 900px; margin: 20px auto; border: 1px solid #ccc; border-radius: 5px; }
-    .header { background: #3399ff; color: white; padding: 8px; font-weight: bold; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; font-size: 12px; }
+    .container { background: #fff; width: 850px; margin: 20px auto; border: 1px solid #ccc; border-radius: 5px; }
+    .header { background: #3399ff; color: white; padding: 6px; font-weight: bold; font-size: 13px; }
     .section { padding: 10px; border-top: 1px solid #ccc; }
-    .section h3 { background: #0073e6; color: white; margin: -10px -10px 10px -10px; padding: 8px; font-size: 14px; }
+    .section h3 { background: #0073e6; color: white; margin: -10px -10px 10px -10px; padding: 6px; font-size: 12px; }
     label { font-weight: bold; margin-right: 5px; }
-    input[type=text], input[type=number] { padding: 5px; width: 250px; }
-    .row { margin-bottom: 10px; display: flex; align-items: center; }
-    .row span { width: 120px; color: red; }
-    .btn { background: #0073e6; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; }
+    input[type=text], input[type=number] { padding: 4px; font-size: 12px; }
+    .row { margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .row span { color: red; min-width: 100px; }
+    .btn { background: #0073e6; color: white; border: none; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; }
     .btn:hover { background: #005bb5; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-    th { background: #0073e6; color: white; }
     .autocomplete { position: relative; display: inline-block; }
-    .suggestions { position: absolute; border: 1px solid #ccc; background: white; max-height: 150px; overflow-y: auto; width: 250px; z-index: 10; }
-    .suggestions div { padding: 6px; cursor: pointer; }
+    .suggestions { position: absolute; border: 1px solid #ccc; background: white; max-height: 120px; overflow-y: auto; width: 250px; z-index: 10; font-size: 12px; }
+    .suggestions div { padding: 4px; cursor: pointer; }
     .suggestions div:hover { background: #f0f0f0; }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">Gerar link rápido</div>
-
-  <div class="section">
-    <div class="row">
-      <label>Loja:</label>
-      <input type="text" placeholder="Digite para pesquisar...">
-    </div>
-  </div>
 
   <div class="section">
     <h3>Produtos</h3>
@@ -44,9 +34,9 @@
   <div class="section">
     <div class="row">
       <label>Cupom de Desconto:</label>
-      <input type="text" id="cupom" placeholder="Ex: cliente10">
+      <input type="text" id="cupom" placeholder="Ex: cliente10" style="width:200px">
     </div>
-    <div class="row">
+    <div class="row" style="flex-wrap:wrap">
       <label>Link Dinâmico:</label>
       <input type="text" id="linkFinal" readonly style="flex:1">
       <button class="btn" onclick="copiarLink()">Copiar Link</button>
@@ -72,29 +62,45 @@
       });
     });
 
-  // cria nova linha de produto
+  // cria nova linha
   function adicionarLinha() {
     const div = document.createElement("div");
     div.className = "row";
     div.innerHTML = `
       <span>Produto Derivação:</span>
+      <input type="text" placeholder="SKU ERP" style="width:80px" oninput="buscarPorSku(this)">
       <div class="autocomplete">
-        <input type="text" oninput="mostrarSugestoes(this)" placeholder="Digite SKU ou descrição">
+        <input type="text" placeholder="Digite descrição" oninput="mostrarSugestoes(this)" style="width:250px">
         <div class="suggestions"></div>
       </div>
-      <span style="margin-left:20px">Quantidade:</span>
-      <input type="number" value="1" min="1" style="width:60px">
+      <span>Quantidade:</span>
+      <input type="number" value="1" min="1" style="width:50px">
       <button class="btn" onclick="removerLinha(this)">-</button>
     `;
     document.getElementById("produtos").appendChild(div);
   }
 
-  // remover linha
+  // remover
   function removerLinha(btn) {
     btn.parentElement.remove();
   }
 
-  // autocomplete
+  // buscar por SKU ERP
+  function buscarPorSku(input) {
+    const sku = input.value.trim();
+    const linha = input.parentElement;
+    const descInput = linha.querySelector(".autocomplete input");
+    if (!sku) return;
+
+    const produto = produtosCSV.find(p => p.skuErp === sku);
+    if (produto) {
+      descInput.value = produto.descricao;
+      descInput.dataset.skuSite = produto.skuSite;
+      descInput.dataset.skuErp = produto.skuErp;
+    }
+  }
+
+  // autocomplete descrição
   function mostrarSugestoes(input) {
     const value = input.value.toLowerCase();
     const sugDiv = input.parentElement.querySelector(".suggestions");
@@ -102,7 +108,6 @@
     if (!value) return;
 
     const resultados = produtosCSV.filter(p =>
-      p.skuErp.toLowerCase().includes(value) ||
       p.descricao.toLowerCase().includes(value)
     ).slice(0, 10);
 
@@ -110,10 +115,12 @@
       const option = document.createElement("div");
       option.textContent = `${p.skuErp} - ${p.descricao}`;
       option.onclick = () => {
-        input.value = p.skuErp;
+        input.value = p.descricao;
         input.dataset.skuSite = p.skuSite;
-        input.dataset.descricao = p.descricao;
+        input.dataset.skuErp = p.skuErp;
         sugDiv.innerHTML = "";
+        linha = input.closest(".row");
+        linha.querySelector("input[placeholder='SKU ERP']").value = p.skuErp;
       };
       sugDiv.appendChild(option);
     });
@@ -124,10 +131,11 @@
     const linhas = document.querySelectorAll("#produtos .row");
     carrinho = [];
     linhas.forEach(l => {
-      const inp = l.querySelector("input[type=text]");
+      const skuInput = l.querySelector("input[placeholder='SKU ERP']");
+      const descInput = l.querySelector(".autocomplete input");
       const qtd = l.querySelector("input[type=number]").value;
-      if (inp.dataset.skuSite) {
-        carrinho.push({ skuSite: inp.dataset.skuSite, skuErp: inp.value, descricao: inp.dataset.descricao, quantidade: qtd });
+      if (descInput.dataset.skuSite) {
+        carrinho.push({ skuSite: descInput.dataset.skuSite, skuErp: skuInput.value, descricao: descInput.value, quantidade: qtd });
       }
     });
 
@@ -152,7 +160,7 @@
     alert("Link copiado!");
   }
 
-  // cria 3 linhas iniciais
+  // inicia com 3 linhas
   for (let i=0; i<3; i++) adicionarLinha();
 </script>
 </body>
